@@ -37,6 +37,9 @@ public class Game {
                     gameArray.set(i, input);
                 }
             }
+            if(history.contains(input)){
+                guessCounter++;
+            }
         } else {
             guessCounter++;
         }
@@ -45,17 +48,16 @@ public class Game {
         System.out.println(guessCounter);
     }
 
-    public void checkGameState(){
-        if(!gameArray.contains('_')){
-            showDialog("You won!", "Victory");
-        }
-        if(guessCounter > guessLimit){
-            showDialog("You lost!", "Game over");
-        }
+    public boolean isGameOver() {
+        return guessCounter > guessLimit;
+    }
+
+    public boolean isVictory() {
+        return !gameArray.contains('_');
     }
 
 
-    public void showDialog(String message, String title) {
+    public static void showDialog(String message, String title) {
         JOptionPane.showMessageDialog(
                 null,
                 message,
@@ -83,7 +85,6 @@ public class Game {
         return sb.toString();
     }
 
-
     public int getGuessLimit() {
         return guessLimit;
     }
@@ -101,6 +102,11 @@ public class Game {
     }
 
     public String getCurrentImage(){
+        if(guessLimit > 11) return "images/image_11.png";
         return "images/image_" + guessCounter + ".png";
+    }
+
+    public String getWord() {
+        return word;
     }
 }
