@@ -57,7 +57,6 @@ public class Hangman {
             }
         });
         inputField.addActionListener(e -> {
-            submitGuess(game);
             submitButton.doClick();
         });
     }
@@ -78,7 +77,7 @@ public class Hangman {
         });
 
         setLimitItem.addActionListener(e -> {
-            setGuessLimit();
+            setGuessLimit(mistakeLimit);
         });
 
         addWordItem.addActionListener(e -> {
@@ -143,19 +142,25 @@ public class Hangman {
         }
     }
 
-    private void setGuessLimit(){
-        JRadioButton rb5 = new JRadioButton("3");
-        JRadioButton rb7 = new JRadioButton("5");
-        JRadioButton rb10 = new JRadioButton("10", true);
+    private void setGuessLimit(int currentLimit){
+        JRadioButton rb3 = new JRadioButton("3");
+        JRadioButton rb5 = new JRadioButton("5");
+        JRadioButton rb10 = new JRadioButton("10");
+
+        switch (currentLimit) {
+            case 3 -> rb3.setSelected(true);
+            case 5 -> rb5.setSelected(true);
+            default -> rb10.setSelected(true);
+        }
 
         ButtonGroup buttonGroup = new ButtonGroup();
+        buttonGroup.add(rb3);
         buttonGroup.add(rb5);
-        buttonGroup.add(rb7);
         buttonGroup.add(rb10);
 
         JPanel panel = new JPanel();
+        panel.add(rb3);
         panel.add(rb5);
-        panel.add(rb7);
         panel.add(rb10);
 
         int dialog = JOptionPane.showConfirmDialog(
@@ -167,8 +172,8 @@ public class Hangman {
         );
 
         if (dialog == JOptionPane.OK_OPTION) {
-            if (rb5.isSelected()) mistakeLimit = 3;
-            else if (rb7.isSelected()) mistakeLimit = 5;
+            if (rb3.isSelected()) mistakeLimit = 3;
+            else if (rb5.isSelected()) mistakeLimit = 5;
             else if (rb10.isSelected()) mistakeLimit = 10;
 
             System.out.println("New limit: " + mistakeLimit);
