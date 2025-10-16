@@ -1,6 +1,10 @@
 import javax.swing.*;
+import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class Hangman {
     private JPanel hangmanPanel;
@@ -11,41 +15,22 @@ public class Hangman {
     private JLabel guessesLabel;
     private JLabel imageLabel;
     private JPanel inputPanel;
+    private JPanel historyCardPanel;
     private JPanel historyPanel;
+    private JLabel mistakeLabel;
 
-    private int guessLimit;
+    private int victoryStreak = 0;
+    private int mistakeLimit = 10;
     private Game game;
-    private String[] randomWords = {
-            "backyard",
-            "toothbrush",
-            "snowflake",
-            "blueberry",
-            "mailbox",
-            "firefly",
-            "bookshelf",
-            "cupcake",
-            "lighthouse",
-            "pocketwatch",
-            "raincoat",
-            "sunflower",
-            "skateboard",
-            "waterfall",
-            "teacup",
-            "butterfly",
-            "headphones",
-            "sandbox",
-            "streetlamp",
-            "typewriter",
-            "windmill",
-            "sunglasses",
-            "strawberry",
-            "pineapple"
-    };
 
-    public Hangman(){
-        guessLimit = 10;
+    private ArrayList<String> randomWords;
 
+    public Hangman(JFrame frame){
+        loadWordsFromFile();
         startNewGame();
+
+        JMenuBar menuBar = getJMenuBar();
+        frame.setJMenuBar(menuBar);
 
         submitButton.addActionListener(e -> {
             submitGuess(game);
@@ -55,9 +40,14 @@ public class Hangman {
         imageLabel.setIcon(icon);
 
         hangmanPanel.setBorder(BorderFactory.createEmptyBorder(15,15,15,15));
-        historyPanel.setBorder(BorderFactory.createEmptyBorder(15,0,0,0));
+        historyCardPanel.setBorder(BorderFactory.createEmptyBorder(15,0,0,0));
         imageLabel.setBorder(BorderFactory.createEmptyBorder(15,0,0,0));
         wordLabel.setBorder(BorderFactory.createEmptyBorder(25,0,0,0));
+
+        historyCardPanel.setLayout(new CardLayout());
+        JPanel emptyPanel = new JPanel();
+        historyCardPanel.add(historyPanel, "history");
+        historyCardPanel.add(emptyPanel, "empty");
 
         //nur ein Character und Uppercase
         inputField.setDocument(new javax.swing.text.PlainDocument() {
@@ -68,13 +58,129 @@ public class Hangman {
         });
         inputField.addActionListener(e -> {
             submitGuess(game);
+            submitButton.doClick();
         });
     }
 
+    private JMenuBar getJMenuBar() {
+        JMenuBar menuBar = new JMenuBar();
+
+        JMenu gameMenu = new JMenu("Game");
+        JMenu viewMenu = new JMenu("View");
+        JMenuItem viewHistoryItem = new JCheckBoxMenuItem("Show Guess History", true);
+        JMenuItem viewMistakeCounterItem = new JCheckBoxMenuItem("Show Mistake Counter");
+        JMenuItem setLimitItem = new JMenuItem("Set Mistake Limit");
+        JMenuItem addWordItem = new JMenuItem("Add Word");
+        JMenuItem startNewGameItem = new JMenuItem("New Game");
+
+        viewHistoryItem.addActionListener(e -> {
+            viewHistory();
+        });
+
+        setLimitItem.addActionListener(e -> {
+            setGuessLimit();
+        });
+
+        addWordItem.addActionListener(e -> {
+            addWordToList();
+        });
+
+        viewMistakeCounterItem.addActionListener(e -> {
+            showMistakeCounter();
+        });
+
+        startNewGameItem.addActionListener(e -> {
+            startNewGame();
+        });
+
+        viewMenu.add(viewHistoryItem);
+        viewMenu.add(viewMistakeCounterItem);
+        gameMenu.add(startNewGameItem);
+        gameMenu.add(addWordItem);
+        gameMenu.add(setLimitItem);
+        menuBar.add(gameMenu);
+        menuBar.add(viewMenu);
+        return menuBar;
+    }
+
+    private void showMistakeCounter(){
+        mistakeLabel.setVisible(!mistakeLabel.isVisible());
+    }
+
+    private void addWordToList(){
+        String newWord = JOptionPane.showInputDialog(
+                null,
+                "Enter a new word:",
+                "Add Word",
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (newWord != null && !newWord.trim().isEmpty()) {
+            if(randomWords.contains(newWord.trim())) {
+                JOptionPane.showMessageDialog(null, "Word already exist.");
+                return;
+            }
+
+            randomWords.add(newWord.trim());
+            System.out.println(randomWords.getLast());
+            JOptionPane.showMessageDialog(null, "Word added.");
+
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("src/words.txt", true))) {
+                writer.newLine();
+                writer.write(newWord);
+            } catch (IOException e) {
+                System.out.println("Hat nicht gefunkt.");
+            }
+        }
+    }
+
+    private void viewHistory() {
+        CardLayout cl = (CardLayout) historyCardPanel.getLayout();
+        if (historyPanel.isVisible()) {
+            cl.show(historyCardPanel, "empty");
+        } else {
+            cl.show(historyCardPanel, "history");
+        }
+    }
+
+    private void setGuessLimit(){
+        JRadioButton rb5 = new JRadioButton("3");
+        JRadioButton rb7 = new JRadioButton("5");
+        JRadioButton rb10 = new JRadioButton("10", true);
+
+        ButtonGroup buttonGroup = new ButtonGroup();
+        buttonGroup.add(rb5);
+        buttonGroup.add(rb7);
+        buttonGroup.add(rb10);
+
+        JPanel panel = new JPanel();
+        panel.add(rb5);
+        panel.add(rb7);
+        panel.add(rb10);
+
+        int dialog = JOptionPane.showConfirmDialog(
+                null,
+                panel,
+                "Set limit for wrong guesses",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (dialog == JOptionPane.OK_OPTION) {
+            if (rb5.isSelected()) mistakeLimit = 3;
+            else if (rb7.isSelected()) mistakeLimit = 5;
+            else if (rb10.isSelected()) mistakeLimit = 10;
+
+            System.out.println("New limit: " + mistakeLimit);
+            startNewGame();
+        }
+    }
+
+
     public static void main(String[] args) {
-        JFrame frame = new JFrame("Hangman");
-        frame.setContentPane(new Hangman().hangmanPanel);
-        frame.setSize(500, 550);
+        JFrame frame = new JFrame("Henkersknecht™ - Das Original");
+        frame.setContentPane(new Hangman(frame).hangmanPanel);
+        frame.setSize(510, 580);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
     }
@@ -99,6 +205,8 @@ public class Hangman {
             historyLabel.setText("<html>"+game.getHistory()+"</html>");
         }
 
+        mistakeLabel.setText("Mistakes: " + game.getMistakeCounter());
+
         ImageIcon icon = new ImageIcon(game.getCurrentImage());
         imageLabel.setIcon(icon);
         inputField.setText("");
@@ -106,10 +214,18 @@ public class Hangman {
         boolean victory = game.isVictory();
 
         if(gameOver){
-            Game.showDialog("You lost!\nThe word is: " + game.getWord(), "Game over");
+            String message = "A measly " + game.getWord() + " has caused his demise...";
+            Game.showDialog(message, "Game over");
+            victoryStreak = 0;
             startNewGame();
         } else if(victory){
-            Game.showDialog("You won!", "Victory");
+            victoryStreak++;
+            if(victoryStreak > 2){
+                String message = "A many hanged men's saviour...\nVictory Streak: " + victoryStreak;
+                Game.showDialog(message, "Victory");
+            } else {
+                Game.showDialog("He is absolved of his sins - for now.", "Victory");
+            }
             startNewGame();
         }
     }
@@ -134,16 +250,28 @@ public class Hangman {
     }
 
     public void startNewGame(){
-        int index = (int) (Math.random() * randomWords.length);
-        String word = randomWords[index];
-        game = new Game(word, guessLimit);
+        int index = (int) (Math.random() * randomWords.size());
+        String word = randomWords.get(index);
+        game = new Game(word, mistakeLimit);
         wordLabel.setText(game.getGameArray());
         historyLabel.setText("No guesses made.");
         ImageIcon icon = new ImageIcon(game.getCurrentImage());
         imageLabel.setIcon(icon);
+        mistakeLabel.setText("Mistakes: 0");
+    }
 
-        System.out.println(game.getHistory());
-        System.out.println(game.getWord());
-        System.out.println(game.getGameArray());
+    private void loadWordsFromFile() {
+        randomWords = new ArrayList<>();
+        try (InputStream is = getClass().getResourceAsStream("/" + "words.txt");
+             BufferedReader br = new BufferedReader(new InputStreamReader(is))) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                randomWords.add(line.trim());
+            }
+        } catch (IOException | NullPointerException e) {
+            e.printStackTrace();
+            // fallback to default words
+            randomWords.addAll(Arrays.asList("backyard","butterfly","snowflake","blueberry","mailbox"));
+        }
     }
 }

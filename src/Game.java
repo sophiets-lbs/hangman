@@ -6,12 +6,12 @@ public class Game {
     private char[] characterArray;
     private ArrayList<Character> gameArray;
     private ArrayList<Character> history;
-    private int guessLimit;
-    private int guessCounter = 0;
+    private int mistakeLimit;
+    private int mistakeCounter = 0;
 
-    public Game(String word, int guessLimit){
+    public Game(String word, int mistakeLimit){
         this.word = word.toUpperCase();
-        this.guessLimit = guessLimit;
+        this.mistakeLimit = mistakeLimit;
         history = new ArrayList<>();
         characterArray = this.word.toCharArray();
         createInitialUnderscores();
@@ -38,18 +38,20 @@ public class Game {
                 }
             }
             if(history.contains(input)){
-                guessCounter++;
+                mistakeCounter++;
             }
         } else {
-            guessCounter++;
+            mistakeCounter++;
         }
         history.add(input);
+    }
 
-        System.out.println(guessCounter);
+    public int getMistakeCounter(){
+        return mistakeCounter;
     }
 
     public boolean isGameOver() {
-        return guessCounter > guessLimit;
+        return mistakeCounter >= mistakeLimit;
     }
 
     public boolean isVictory() {
@@ -85,25 +87,17 @@ public class Game {
         return sb.toString();
     }
 
-    public int getGuessLimit() {
-        return guessLimit;
-    }
-
-    public void setGuessLimit(int guessLimit) {
-        this.guessLimit = guessLimit;
-    }
-
-    public int getGuessCounter() {
-        return guessCounter;
-    }
-
-    public void setGuessCounter(int guessCounter) {
-        this.guessCounter = guessCounter;
-    }
-
     public String getCurrentImage(){
-        if(guessLimit > 11) return "images/image_11.png";
-        return "images/image_" + guessCounter + ".png";
+        int totalImages = 11;
+        if (mistakeCounter <= 0) return "images/image_0.png";
+
+        // Calculate image number proportionally
+        double fraction = (double) mistakeCounter / mistakeLimit;
+        int imageNr = (int) Math.round(fraction * totalImages);
+
+        if (imageNr > totalImages) imageNr = totalImages;
+        if (imageNr < 0) imageNr = 0;
+        return "images/image_" + imageNr + ".png";
     }
 
     public String getWord() {
